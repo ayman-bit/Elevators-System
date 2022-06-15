@@ -2,7 +2,7 @@ package mun.concurrent.assignment.two;
 
 import java.util.concurrent.locks.*;
 
-public class ElevatorSimulator implements Runnable {
+class ElevatorSimulator implements Runnable {
 
 	private static Clock SimulationClock;
 	private static ElevatorArray elevators;	
