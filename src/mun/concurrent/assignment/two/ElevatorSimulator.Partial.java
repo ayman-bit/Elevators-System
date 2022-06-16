@@ -13,6 +13,8 @@ class ElevatorSimulator implements Runnable {
 	private final int simulationTime;
 	
 	private ElevatorStats elevatorStats;
+	private Elevator elevator;
+	private Rider rider;
 	
 	private ElevatorRiderFactory elevatorRiderFactory;
 	
@@ -36,7 +38,7 @@ class ElevatorSimulator implements Runnable {
 	public void run() {		
 
 		//<INITIALIZATION HERE>
-
+		elevatorRiderFactory = new ElevatorRiderFactory();
 		SimulationClock = new Clock();
 		// Simulate Small Elevators		
 		while (SimulationClock.getTick() < simulationTime)
@@ -46,7 +48,8 @@ class ElevatorSimulator implements Runnable {
 				Thread.sleep(50);
 				elevatorClockLock.lockInterruptibly(); // Use lockInterruptibly so that thread doesn't get stuck waiting for lock
 				SimulationClock.tick();		
-				elevatorClockTicked.signalAll();										
+				elevatorClockTicked.signalAll();
+				elevatorRiderFactory.nextRider();
 			}	
 			catch (InterruptedException e)
 			{				
