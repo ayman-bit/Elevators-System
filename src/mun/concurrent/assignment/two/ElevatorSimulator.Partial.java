@@ -1,5 +1,7 @@
 package mun.concurrent.assignment.two;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.concurrent.locks.*;
 
 class ElevatorSimulator implements Runnable {
@@ -33,26 +35,38 @@ class ElevatorSimulator implements Runnable {
 		this.numElevators = numElevators;
 		this.elevatorCapacity = elevatorCapacity;
 		this.simulationTime = simulationTime;
+		ArrayList<Thread> myThread = new ArrayList<Thread>();
+		ElevatorArray elevatorArray = new ElevatorArray(numElevators, elevatorCapacity);
+
+//		//create threads
+//		for (int i = 0; i<numElevators; i++){
+//			myThread.set(i, new Thread(this, String.valueOf(i)));
+//			myThread.get(i).start();
+//			System.out.println("Starting");
+//		}
+//		//each thread runs .run
+
 	}
-			
+	@Override
 	public void run() {		
 
 		//<INITIALIZATION HERE>
-		elevatorRiderFactory = new ElevatorRiderFactory();
 		SimulationClock = new Clock();
-		// Simulate Small Elevators		
+		// Simulate Small Elevators
 		while (SimulationClock.getTick() < simulationTime)
 		{
 			try
 			{
+				System.out.println("Thread going to sleep");
 				Thread.sleep(50);
+				System.out.println("Thread wake up");
 				elevatorClockLock.lockInterruptibly(); // Use lockInterruptibly so that thread doesn't get stuck waiting for lock
 				SimulationClock.tick();		
 				elevatorClockTicked.signalAll();
-				elevatorRiderFactory.nextRider();
 			}	
 			catch (InterruptedException e)
-			{				
+			{
+				e.printStackTrace();
 			}
 			finally
 			{	

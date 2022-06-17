@@ -5,9 +5,8 @@ public class ElevatorRiderFactory {
 
     public ElevatorRiderFactory() {}
 
-    public void nextRider(){
-        //TODO: create a Rider object
-        int randomNum = ThreadLocalRandom.current().nextInt(20, 120 + 1);
-        System.out.println(randomNum);
-    }
+//    public int nextRider(){
+//        //TODO: create a Rider object
+//        return ThreadLocalRandom.current().nextInt(20, 120 + 1);
+//    }
 }
