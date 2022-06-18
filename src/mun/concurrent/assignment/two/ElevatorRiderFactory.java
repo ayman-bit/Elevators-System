@@ -5,7 +5,11 @@ import static mun.concurrent.assignment.two.ElevatorSimulator.SimulationClock;
 
 public class ElevatorRiderFactory {
 
-    public ElevatorRiderFactory() {}
+    private ElevatorArray elevatorArray;
+    public ElevatorRiderFactory(ElevatorArray elevatorArray) {
+        this.elevatorArray = elevatorArray;
+
+    }
 
     //int nextRiderTime = ThreadLocalRandom.current().nextInt(20, 120 + 1);
 
@@ -27,7 +31,8 @@ public class ElevatorRiderFactory {
 
     public int setNextRiderRider(int start_floor, int nextRiderTime){
         if (nextRiderTime == SimulationClock.getTick()) {
-            generateRiderFloor(start_floor);
+            Rider rider = generateRiderFloor(start_floor);
+            elevatorArray.scheduleRider(rider);
             nextRiderTime = SimulationClock.getTick() + ThreadLocalRandom.current().nextInt(20, 120 + 1);
         }
         return nextRiderTime;
