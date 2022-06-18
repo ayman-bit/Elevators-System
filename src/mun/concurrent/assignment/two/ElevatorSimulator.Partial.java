@@ -2,6 +2,7 @@ package mun.concurrent.assignment.two;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.*;
 
@@ -39,24 +40,25 @@ class ElevatorSimulator implements Runnable {
 		this.numElevators = numElevators;
 		this.elevatorCapacity = elevatorCapacity;
 		this.simulationTime = simulationTime;
-		elevatorRiderFactory = new ElevatorRiderFactory();
-		ArrayList<Thread> myThread = new ArrayList<Thread>();
-		ElevatorArray elevatorArray = new ElevatorArray(numElevators, elevatorCapacity);
+		elevators = new ElevatorArray(numElevators, elevatorCapacity);
+		elevatorRiderFactory = new ElevatorRiderFactory(elevators);
+		List<Thread> myThread = new ArrayList<Thread>(numElevators);
 
 		nextRidersTimes = new ArrayList<Integer>();
 		for (int i = 0; i < 5; i++){
 			nextRidersTimes.add(ThreadLocalRandom.current().nextInt(20, 120 + 1));
 		}
-		Runnable runnable = new ElevatorSimulator();
+
 		//create threads
 		for (int i = 0; i<numElevators; i++){
-			Thread thread = new Thread(runnable, i);
+			Runnable runnable = new Elevator();
+			Thread thread = new Thread(runnable);
+			// myThread.add(i,new Thread(new ElevatorSimulator(), String.valueOf(i)));
+			// myThread.get(i).start();
 			thread.start();
-//			myThread.set(i, new Thread(this, String.valueOf(i)));
-//			myThread.get(i).start();
-			System.out.println("Starting");
+			System.out.println("Starting: " +  Thread.currentThread().getName());
 		}
-//		//each thread runs .run
+		//each thread runs .run
 
 	}
 
