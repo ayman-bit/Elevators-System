@@ -10,15 +10,15 @@ public class Elevator implements Runnable {
     private int capacity; // max capacity of elevator
     private int currentCount; // how many members in the elevator
     private int currentFloor;
-    private int destinationFloor;
     private Thread thread; // Elevator's thread to handle asynchronous movement
     private ArrayList<Integer> elevator_queue = new ArrayList<Integer>();
     private ArrayList<Integer> dropOff_queue = new ArrayList<Integer>();
-    private String status; //Make enum
+    private Status status;
     private boolean elevatorRunning = false;
     private boolean moving = false;
     private static final int PASSENDER_LEAVING_TIME = 15;
     private static final int TRAVEL_TIME = 5;
+
 
 
     public Elevator(int capacity, int currentCount, int currentFloor){
@@ -28,7 +28,7 @@ public class Elevator implements Runnable {
         this.currentFloor = currentFloor;
     }
 
-    public String getStatus(){
+    public Status getStatus(){
         return status;
     }
 
@@ -37,37 +37,37 @@ public class Elevator implements Runnable {
     }
 
     public int getDestinationFloor() {
-        return destinationFloor;
+        return elevator_queue.get(0);
     }
 
     public void addRider(Rider rider){
         // add rider.start to queue
         elevator_queue.add(rider.start_floor);
         elevator_queue.add(rider.dest_floor);
-        // TODO: sort the queue
+        // TODO: sort the queue. ISSUE: when elevator going down, should be sorted in reverse order. maybe no need to sort.
         dropOff_queue.add(rider.dest_floor);
     }
 
-    public void removeRider(Rider rider){
-        // drops off the rider
-        if (dropOff_queue.contains(elevator_queue.get(0))) {
-            // what if 2 people want to get off here?
-            if (dropOff_queue.contains(elevator_queue.get(0))==dropOff_queue.contains(elevator_queue.get(1))){
-                currentCount--;
-                currentCount--;
-                dropOff_queue.remove(dropOff_queue.indexOf(elevator_queue.get(0)));
-                dropOff_queue.remove(dropOff_queue.indexOf(elevator_queue.get(1)));
-            }
-            else {
-            currentCount--;
-            dropOff_queue.remove(dropOff_queue.indexOf(elevator_queue.get(0)));
-            }
+    public void removeRider(int currentFloor){
+        // elevator_queue.get(0) is current floor since array always gets sorted
+        // what if 2 people want to get off here?
+        int occurences = Collections.Frequency(dropOff_queue, currentFloor));
 
+        if (occurences == 2){
+            currentCount -= 2;
+            dropOff_queue.remove(dropOff_queue.indexOf(currentFloor));
+            dropOff_queue.remove(dropOff_queue.indexOf(currentFloor));
+            elevator_queue.remove(elevator_queue.indexOf(currentFloor));
+            elevator_queue.remove(elevator_queue.indexOf(currentFloor));
         }
-        elevator_queue.remove(0);
+        else {
+            currentCount--;
+            dropOff_queue.remove(dropOff_queue.indexOf(currentFloor));
+            elevator_queue.remove(elevator_queue.indexOf(currentFloor));
+        }
+
 
         // TODO: sort the queue
-        ;
     }
 
     // is Elevator thread running?
@@ -107,21 +107,61 @@ public class Elevator implements Runnable {
         for (int i=SimulationClock.getTick(); i < (i+time);i++ ){}
     } // end method pauseThread
 
+    // Simulate elevator moving
     public void run(){
+
         // while there exists destinations on the queue
-        // read the destination // READING THE QUEUE AND WRITING TO THE QUEUE SHOULD BE LOCK-PROTECTED
-        // go to that floor
-        // Going to floor:
-//         while(getCurrentFloor() != getDestinationFloor()){
-//
-//             for (int i = SimulationClock.getTick(), i < ( i + 5); i++ ){
-//             SimulationClock.tick();
-//         }
-        // clock.getTick(), if and constantly update its status and currentFloor:
-        // Once 5 seconds pass, increment/decrement floor.
-        // When it stops at a floor, check whether currentCount == capacity, then REJECT
-        // if no more destinations on the queue, just sleep the thread maybe
-        // (Do we do a signalAll from ElevatorArray? If we do signalAll, each sleeping elevator will ask "Did something get added to my queue" )
+        while(elevator_queue.size() > 0 ){
+            // Set status based on direction
+            setStatusUpDown();
+
+            // TODO: lock the lock to read tick initially
+            // read current tick
+            int currentTime = clock.getTick();
+
+            // Go to that floor.
+            while(getCurrentFloor() != elevator_queue.get(0)){
+                // lock clock
+                if (clock.getTick() == currentTime + 5){
+                    updateFloor();
+                    currentTime = clock.getTick();
+                }
+                // unlock here
+            }
+
+            // Cases: 1 drop off only, 2 drop off only, 1 drop off and 1 entering, 2 drop off and 1 entering, 1 entering only
+
+            // Drop off rider (or 2 riders) if current floor contained in dropOff_queue
+            if (dropOff_queue.contains(getCurrentFloor())){
+                removeRider(getCurrentFloor());
+            }
+
+            // Increment count if current floor remains on elevator_queue after potentially removing rider above
+            if (elevator_queue.contains(getCurrentFloor())){
+
+                if (currentCount== capacity){
+                    //TODO: Reject rider
+                }
+
+                else {
+                    currentCount++;
+                }
+
+                // Remove current floor from elevator queue once rider enters/is rejected
+                elevator_queue.remove(elevator_queue.indexOf(getCurrentFloor()));
+            }
+
+            setStatusStationary();
+
+            // Wait 15 seconds
+            while (clock.getTick() < currentTime + 15){ // "Less than" is used instead of "!=" in case clock ticked twice
+                //sleep 10 ms maybe
+            }
+
+            // What should happen if no more destinations on the queue? just sleep the thread maybe
+            // (Do we do a signalAll from ElevatorArray? If we do signalAll, each sleeping elevator will ask "Did something get added to my queue" )
+
+        }
 
 
 
@@ -141,4 +181,35 @@ public class Elevator implements Runnable {
         } // end while loop
 
     } // end method run
+
+    private void updateFloor() {
+        if (status== Status.UP){
+            currentFloor++;
+        }
+        else if (status == Status.DOWN){
+            currentFloor--;
+        }
+    }
+
+    public void setStatusStationary() {
+        if (elevator_queue.size() == 0){
+            status = Status.STATIONARY;
+        }
+        else if (status == Status.UP){
+            status = Status.STATIONARY_UP;
+        }
+        else if (status == Status.DOWN){
+            status = Status.STATIONARY_DOWN;
+        }
+    }
+
+    // Set the status to UP or DOWN
+    public void setStatusUpDown(){
+        if (elevator_queue.get(0) > getCurrentFloor()){
+            status = Status.DOWN;
+        }
+        else {
+            status = Status.UP;
+        }
+    }
 }
