@@ -21,6 +21,7 @@ class ElevatorSimulator implements Runnable {
 	private Rider rider;
 	
 	private ElevatorRiderFactory elevatorRiderFactory;
+	ArrayList<Integer> nextRidersTimes;
 	
 	// Allocate synchronization variables
 	ReentrantLock elevatorClockLock = new ReentrantLock();
@@ -41,6 +42,11 @@ class ElevatorSimulator implements Runnable {
 		elevatorRiderFactory = new ElevatorRiderFactory();
 		ArrayList<Thread> myThread = new ArrayList<Thread>();
 		ElevatorArray elevatorArray = new ElevatorArray(numElevators, elevatorCapacity);
+
+		nextRidersTimes = new ArrayList<Integer>();
+		for (int i = 0; i < 5; i++){
+			nextRidersTimes.add(ThreadLocalRandom.current().nextInt(20, 120 + 1));
+		}
 		Runnable runnable = new ElevatorSimulator();
 		//create threads
 		for (int i = 0; i<numElevators; i++){
@@ -68,12 +74,20 @@ class ElevatorSimulator implements Runnable {
 		{
 			try
 			{
-//				System.out.println("Thread going to sleep");
 				Thread.sleep(50);
 				elevatorClockLock.lockInterruptibly(); // Use lockInterruptibly so that thread doesn't get stuck waiting for lock
 				SimulationClock.tick();		
 				elevatorClockTicked.signalAll();
-				elevatorRiderFactory.setNextRiderRider();
+
+				for (int i=0; i<5; i++){
+					int nextTime = elevatorRiderFactory.setNextRiderRider(i+1, nextRidersTimes.get(i));
+					nextRidersTimes.set(i, nextTime);
+					System.out.println(i+1);
+					System.out.println(nextRidersTimes.get(i));
+				}
+				System.out.println("current tick" + SimulationClock.getTick());
+				System.out.println("\n");
+
 
 			}
 			catch (InterruptedException e)
