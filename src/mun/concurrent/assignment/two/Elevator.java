@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static mun.concurrent.assignment.two.ElevatorSimulator.SimulationClock;
 
@@ -20,8 +22,9 @@ public class Elevator implements Runnable {
     private boolean moving = false;
     private static final int PASSENDER_LEAVING_TIME = 15;
     private static final int TRAVEL_TIME = 5;
-
-
+    ReentrantLock elevatorLock = new ReentrantLock();
+    Condition riderAdded = elevatorLock.newCondition();
+    //Condition noRider = elevatorLock.newCondition();
 
     public Elevator(int capacity, int currentCount, int currentFloor){
 
@@ -30,9 +33,6 @@ public class Elevator implements Runnable {
         this.currentFloor = currentFloor;
     }
 
-    public Elevator() {
-
-    }
 
     public Status getStatus(){
         return status;
@@ -52,6 +52,7 @@ public class Elevator implements Runnable {
         elevator_queue.add(rider.dest_floor);
         // TODO: sort the queue. ISSUE: when elevator going down, should be sorted in reverse order. maybe no need to sort.
         dropOff_queue.add(rider.dest_floor);
+//        riderAdded.signalAll();
     }
 
     public void removeRider(int currentFloor){
@@ -117,7 +118,13 @@ public class Elevator implements Runnable {
     // Simulate elevator moving
     public void run(){
         System.out.println("current elevator: " +  Thread.currentThread().getName());
-        while (true){
+        System.out.println("WEEE GOTT SOMEONE INSIDE THE ELEVATOR: " + elevator_queue.size());
+
+//        elevatorLock.lock();
+//        try {
+//            while(elevator_queue.size() == 0){
+//                riderAdded.await();
+//            }
             // while there exists destinations on the queue
             while(elevator_queue.size() > 0 ){
                 System.out.println("current thread" + Thread.currentThread().getName() + elevator_queue.size());
@@ -143,6 +150,7 @@ public class Elevator implements Runnable {
                 // Drop off rider (or 2 riders) if current floor contained in dropOff_queue
                 if (dropOff_queue.contains(getCurrentFloor())){
                     removeRider(getCurrentFloor());
+                    System.out.println("Dropped off rider");
                 }
 
                 // Increment count if current floor remains on elevator_queue after potentially removing rider above
@@ -150,6 +158,7 @@ public class Elevator implements Runnable {
 
                     if (currentCount== capacity){
                         //TODO: Reject rider
+                        System.out.println("Rejected");
                     }
 
                     else {
@@ -171,10 +180,12 @@ public class Elevator implements Runnable {
                 // (Do we do a signalAll from ElevatorArray? If we do signalAll, each sleeping elevator will ask "Did something get added to my queue" )
 
             }
-
-        }
-
-
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
+//        finally {
+//            elevatorLock.unlock();
+//        }
 
 //        while ( isElevatorRunning() ) {
 //
@@ -194,7 +205,7 @@ public class Elevator implements Runnable {
     } // end method run
 
     private void updateFloor() {
-        if (status== Status.UP){
+        if (status == Status.UP){
             currentFloor++;
         }
         else if (status == Status.DOWN){

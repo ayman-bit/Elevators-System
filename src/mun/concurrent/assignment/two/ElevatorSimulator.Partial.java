@@ -10,7 +10,7 @@ class ElevatorSimulator implements Runnable {
 
 	static Clock SimulationClock;
 	private static Clock SimulationRider;
-	private static ElevatorArray elevators;	
+	private static ElevatorArray elevators;
 	
 	private int numElevators;
 	private int elevatorCapacity;
@@ -40,7 +40,8 @@ class ElevatorSimulator implements Runnable {
 		this.numElevators = numElevators;
 		this.elevatorCapacity = elevatorCapacity;
 		this.simulationTime = simulationTime;
-		elevators = new ElevatorArray(numElevators, elevatorCapacity);
+//		elevators = new ElevatorArray(numElevators, elevatorCapacity);
+		elevators = new ElevatorArray();
 		elevatorRiderFactory = new ElevatorRiderFactory(elevators);
 		List<Thread> myThread = new ArrayList<Thread>(numElevators);
 
@@ -51,13 +52,17 @@ class ElevatorSimulator implements Runnable {
 
 		//create threads
 		for (int i = 0; i<numElevators; i++){
-			Runnable runnable = new Elevator();
+			Object object = new Elevator(elevatorCapacity,0, 1);
+			Runnable runnable = (Runnable) object;
 			Thread thread = new Thread(runnable);
+			Elevator elevator = (Elevator) object;
+			elevators.add(elevator);
 			// myThread.add(i,new Thread(new ElevatorSimulator(), String.valueOf(i)));
 			// myThread.get(i).start();
 			thread.start();
 			System.out.println("Starting: " +  Thread.currentThread().getName());
 		}
+		elevatorRiderFactory = new ElevatorRiderFactory(elevators);
 		//each thread runs .run
 
 	}
