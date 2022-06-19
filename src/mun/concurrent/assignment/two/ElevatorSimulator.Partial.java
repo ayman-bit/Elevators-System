@@ -2,6 +2,7 @@ package mun.concurrent.assignment.two;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.*;
 
@@ -9,7 +10,7 @@ class ElevatorSimulator implements Runnable {
 
 	static Clock SimulationClock;
 	private static Clock SimulationRider;
-	private static ElevatorArray elevators;	
+	private static ElevatorArray elevators;
 	
 	private int numElevators;
 	private int elevatorCapacity;
@@ -39,24 +40,30 @@ class ElevatorSimulator implements Runnable {
 		this.numElevators = numElevators;
 		this.elevatorCapacity = elevatorCapacity;
 		this.simulationTime = simulationTime;
-		elevatorRiderFactory = new ElevatorRiderFactory();
-		ArrayList<Thread> myThread = new ArrayList<Thread>();
-		ElevatorArray elevatorArray = new ElevatorArray(numElevators, elevatorCapacity);
+//		elevators = new ElevatorArray(numElevators, elevatorCapacity);
+		elevators = new ElevatorArray();
+		elevatorRiderFactory = new ElevatorRiderFactory(elevators);
+		List<Thread> myThread = new ArrayList<Thread>(numElevators);
 
 		nextRidersTimes = new ArrayList<Integer>();
 		for (int i = 0; i < 5; i++){
 			nextRidersTimes.add(ThreadLocalRandom.current().nextInt(20, 120 + 1));
 		}
-		Runnable runnable = new ElevatorSimulator();
+
 		//create threads
 		for (int i = 0; i<numElevators; i++){
+			Object object = new Elevator(elevatorCapacity,0, 1);
+			Runnable runnable = (Runnable) object;
 			Thread thread = new Thread(runnable);
+			Elevator elevator = (Elevator) object;
+			elevators.add(elevator);
+			// myThread.add(i,new Thread(new ElevatorSimulator(), String.valueOf(i)));
+			// myThread.get(i).start();
 			thread.start();
-//			myThread.set(i, new Thread(this, String.valueOf(i)));
-//			myThread.get(i).start();
-			System.out.println("Starting");
+			System.out.println("Starting: " +  Thread.currentThread().getName());
 		}
-//		//each thread runs .run
+		elevatorRiderFactory = new ElevatorRiderFactory(elevators);
+		//each thread runs .run
 
 	}
 
@@ -87,6 +94,7 @@ class ElevatorSimulator implements Runnable {
 				}
 				System.out.println("current tick" + SimulationClock.getTick());
 				System.out.println("\n");
+				System.out.println("current Thread:" + Thread.currentThread().getName());
 
 
 			}
