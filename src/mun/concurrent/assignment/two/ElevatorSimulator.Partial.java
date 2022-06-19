@@ -28,6 +28,7 @@ class ElevatorSimulator implements Runnable {
 	ReentrantLock elevatorClockLock = new ReentrantLock();
 
 	ReentrantLock elevatorLock = new ReentrantLock();
+	Condition riderAdded = elevatorLock.newCondition();
 
 
 	Condition elevatorClockTicked = elevatorClockLock.newCondition();	
@@ -86,12 +87,25 @@ class ElevatorSimulator implements Runnable {
 				SimulationClock.tick();		
 				elevatorClockTicked.signalAll();
 
+				// Check if a rider is set to be generated now. If so, generate that rider, and time for next one.
 				for (int i=0; i<5; i++){
-					int nextTime = elevatorRiderFactory.setNextRiderRider(i+1, nextRidersTimes.get(i));
-					nextRidersTimes.set(i, nextTime);
+					int currentNextRiderTime = nextRidersTimes.get(i);
+
+					if (currentNextRiderTime == SimulationClock.getTick()) {
+						int nextRiderTime = SimulationClock.getTick() + ThreadLocalRandom.current().nextInt(20, 120 + 1);
+						Rider rider = elevatorRiderFactory.generateRiderFloor(i+1);
+						elevators.scheduleRider(rider); // assigns rider to elevator
+						nextRidersTimes.set(i, nextRiderTime);
+					}
+
 					System.out.println(i+1);
 					System.out.println(nextRidersTimes.get(i));
 				}
+
+				// Signal elevator threads a rider has been added
+				elevatorLock.lock(); // Is this needed?
+				riderAdded.signalAll();
+
 				System.out.println("current tick" + SimulationClock.getTick());
 				System.out.println("\n");
 				System.out.println("current Thread:" + Thread.currentThread().getName());

@@ -125,6 +125,7 @@ public class Elevator implements Runnable {
 //            while(elevator_queue.size() == 0){
 //                riderAdded.await();
 //            }
+
             // while there exists destinations on the queue
             while(elevator_queue.size() > 0 ){
                 System.out.println("current thread" + Thread.currentThread().getName() + elevator_queue.size());

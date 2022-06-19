@@ -76,4 +76,8 @@ public class ElevatorArray {
     public void add(Elevator elevator) {
         elevators.add(elevator);
     }
+
+    // We dont necessarily have to tie one thread for each elevator, it can just be 4 random threads that all get called
+    // when a rider gets added somewhere
+    // The common object they share access to is the ElevatorArray
 }
