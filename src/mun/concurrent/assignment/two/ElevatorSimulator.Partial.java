@@ -1,6 +1,5 @@
 package mun.concurrent.assignment.two;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -41,9 +40,10 @@ class ElevatorSimulator implements Runnable {
 		this.numElevators = numElevators;
 		this.elevatorCapacity = elevatorCapacity;
 		this.simulationTime = simulationTime;
-//		elevators = new ElevatorArray(numElevators, elevatorCapacity);
-		elevators = new ElevatorArray();
-		elevatorRiderFactory = new ElevatorRiderFactory(elevators);
+		elevators = new ElevatorArray(numElevators, elevatorCapacity);
+//		elevators = new ElevatorArray();
+
+		elevatorRiderFactory = new ElevatorRiderFactory();
 		List<Thread> myThread = new ArrayList<Thread>(numElevators);
 
 		nextRidersTimes = new ArrayList<Integer>();
@@ -53,17 +53,10 @@ class ElevatorSimulator implements Runnable {
 
 		//create threads
 		for (int i = 0; i<numElevators; i++){
-			Object object = new Elevator(elevatorCapacity,0, 1);
-			Runnable runnable = (Runnable) object;
-			Thread thread = new Thread(runnable);
-			Elevator elevator = (Elevator) object;
-			elevators.add(elevator);
-			// myThread.add(i,new Thread(new ElevatorSimulator(), String.valueOf(i)));
-			// myThread.get(i).start();
+			Thread thread = new Thread(new ElevatorArray());
 			thread.start();
 			System.out.println("Starting: " +  Thread.currentThread().getName());
 		}
-		elevatorRiderFactory = new ElevatorRiderFactory(elevators);
 		//each thread runs .run
 
 	}
@@ -94,17 +87,14 @@ class ElevatorSimulator implements Runnable {
 					if (currentNextRiderTime == SimulationClock.getTick()) {
 						int nextRiderTime = SimulationClock.getTick() + ThreadLocalRandom.current().nextInt(20, 120 + 1);
 						Rider rider = elevatorRiderFactory.generateRiderFloor(i+1);
-						elevators.scheduleRider(rider); // assigns rider to elevator
+						elevators.addRiderToRiders(rider);
 						nextRidersTimes.set(i, nextRiderTime);
 					}
 
-					System.out.println(i+1);
-					System.out.println(nextRidersTimes.get(i));
+					System.out.println("Floor: "+ (i+1) + ". Next rider: " + nextRidersTimes.get(i));
 				}
 
-				// Signal elevator threads a rider has been added
-				elevatorLock.lock(); // Is this needed?
-				riderAdded.signalAll();
+
 
 				System.out.println("current tick" + SimulationClock.getTick());
 				System.out.println("\n");

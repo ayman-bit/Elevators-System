@@ -10,7 +10,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import static mun.concurrent.assignment.two.ElevatorSimulator.SimulationClock;
 
 
-public class Elevator implements Runnable {
+public class Elevator {
     private int capacity; // max capacity of elevator
     private int currentCount; // how many members in the elevator
     private int currentFloor;
@@ -46,7 +46,7 @@ public class Elevator implements Runnable {
         return elevator_queue.get(0);
     }
 
-    public void addRider(Rider rider){
+    public void addRiderToElevQueue(Rider rider){
         // add rider.start to queue
         elevator_queue.add(rider.start_floor);
         elevator_queue.add(rider.dest_floor);
@@ -84,13 +84,13 @@ public class Elevator implements Runnable {
         return elevatorRunning;
     }
     // start Elevator thread
-    public void start() {
-        if ( thread == null ) {
-            thread = new Thread(this);
-        }
-        elevatorRunning = true;
-        thread.start();
-    }
+//    public void start() {
+//        if ( thread == null ) {
+//            thread = new Thread(this);
+//        }
+//        elevatorRunning = true;
+//        thread.start();
+//    }
 
     // stop Elevator thread; method run terminates
     public void stopElevator() {
@@ -116,7 +116,7 @@ public class Elevator implements Runnable {
     } // end method pauseThread
 
     // Simulate elevator moving
-    public void run(){
+    public void move(){
         System.out.println("current elevator: " +  Thread.currentThread().getName());
         System.out.println("WEEE GOTT SOMEONE INSIDE THE ELEVATOR: " + elevator_queue.size());
 

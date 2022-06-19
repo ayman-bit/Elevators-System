@@ -5,9 +5,7 @@ import static mun.concurrent.assignment.two.ElevatorSimulator.SimulationClock;
 
 public class ElevatorRiderFactory {
 
-    private ElevatorArray elevatorArray;
-    public ElevatorRiderFactory(ElevatorArray elevatorArray) {
-        this.elevatorArray = elevatorArray;
+    public ElevatorRiderFactory() {
 
     }
 
