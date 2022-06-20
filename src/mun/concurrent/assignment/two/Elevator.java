@@ -1,9 +1,6 @@
 package mun.concurrent.assignment.two;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -22,17 +19,22 @@ public class Elevator {
     private boolean moving = false;
     private static final int PASSENDER_LEAVING_TIME = 15;
     private static final int TRAVEL_TIME = 5;
-    ReentrantLock elevatorLock = new ReentrantLock();
-    Condition riderAdded = elevatorLock.newCondition();
-    //Condition noRider = elevatorLock.newCondition();
+    private static ReentrantLock elevatorClockLock;
+    private static Condition elevatorClockTicked;
+    ReentrantLock elevatorLock = new ReentrantLock(); // TODO Why this being used??
+    private int elevatorIndex;
 
-    public Elevator(int capacity, int currentCount, int currentFloor){
+    public Elevator(int capacity, int currentCount, int currentFloor, int index){
 
         this.capacity = capacity;
         this.currentCount = currentCount;
         this.currentFloor = currentFloor;
+        elevatorIndex = index;
     }
 
+    public Elevator(){
+
+    }
 
     public Status getStatus(){
         return status;
@@ -49,25 +51,56 @@ public class Elevator {
     public void addRiderToElevQueue(Rider rider){
         // add rider.start to queue
         elevator_queue.add(rider.start_floor);
-        elevator_queue.add(rider.dest_floor);
-        // TODO: sort the queue. ISSUE: when elevator going down, should be sorted in reverse order. maybe no need to sort.
+
+//        elevator_queue.add(rider.dest_floor);
         dropOff_queue.add(rider.dest_floor);
+//        pickup_queue.add(rider.start_floor);
+
+
+        // elevator_queue = [5, 1, 4,2]
+
+        // pickup_queue = [5,4] DOWN
+
+        // dropoff_queue = [1,2] DOWN
+        // dropoff_queue = [2,1] DOWN
+
+
+
+
+
+        // elevator at level one UP
+
+
+
+        sortQueue(elevator_queue);
+        // TODO: should we sort the dropoff queue?
     }
 
-    public void removeRider(int currentFloor){
+    private void sortQueue(List<Integer> queue) {
+        if (status == Status.UP){
+            Collections.sort(queue);
+        }
+        else if (status == Status.DOWN){
+            Collections.sort(queue, Collections.reverseOrder());
+        }
+    }
+
+    public void dropOffRider(){
         // elevator_queue.get(0) is current floor since array always gets sorted
         // what if 2 people want to get off here?
         Integer currentFloorI = (Integer) currentFloor;
         int occurences = Collections.frequency(dropOff_queue, currentFloorI);
 
         if (occurences == 2){
+            System.out.println("Elevator " + getElevatorIndex() + " Dropping off riders");
             currentCount -= 2;
             dropOff_queue.remove(dropOff_queue.indexOf(currentFloor));
             dropOff_queue.remove(dropOff_queue.indexOf(currentFloor));
-            elevator_queue.remove(elevator_queue.indexOf(currentFloor));
-            elevator_queue.remove(elevator_queue.indexOf(currentFloor));
+//            elevator_queue.remove(elevator_queue.indexOf(currentFloor));
+//            elevator_queue.remove(elevator_queue.indexOf(currentFloor));
         }
-        else {
+        else if (occurences == 1) {
+            System.out.println("Elevator " + getElevatorIndex() + " Dropping off riders");
             currentCount--;
             dropOff_queue.remove(dropOff_queue.indexOf(currentFloor));
             elevator_queue.remove(elevator_queue.indexOf(currentFloor));
@@ -114,101 +147,7 @@ public class Elevator {
         for (int i=SimulationClock.getTick(); i < (i+time);i++ ){}
     } // end method pauseThread
 
-    // Simulate elevator moving
-    public void move(){
-        System.out.println("current elevator: " +  Thread.currentThread().getName());
-        System.out.println("We got someone Inside the elevator from floor: " + elevator_queue.get(0) + " Heading to floor: " + elevator_queue.get(1));
-
-//        elevatorLock.lock();
-//        try {
-//            while(elevator_queue.size() == 0){
-//                riderAdded.await();
-//            }
-
-            // while there exists destinations on the queue
-            while(elevator_queue.size() > 0 ){
-                System.out.println("current thread: " + Thread.currentThread().getName());
-                // Set status based on direction
-                setStatusUpDown();
-
-                // TODO: lock the lock to read tick initially
-                // read current tick
-                int currentTime = SimulationClock.getTick();
-
-                // Go to that floor.
-                while(getCurrentFloor() != elevator_queue.get(0)){
-                    // lock clock
-                    System.out.println();
-                    SimulationClock.tick();//TODO: shouldnt tick here, should come from main thread
-                    System.out.println("Elevator moving current time: " + SimulationClock.getTick() + " current floor: " + getCurrentFloor() + " Destination floor: " + elevator_queue.get(0));
-                    if (SimulationClock.getTick() == currentTime + 5){
-                        updateFloor();
-                        currentTime = SimulationClock.getTick();
-                    }
-                    // unlock here
-                }
-
-                // Cases: 1 drop off only, 2 drop off only, 1 drop off and 1 entering, 2 drop off and 1 entering, 1 entering only
-
-                // Drop off rider (or 2 riders) if current floor contained in dropOff_queue
-                if (dropOff_queue.contains(getCurrentFloor())){
-                    removeRider(getCurrentFloor());
-                    System.out.println("Dropped off rider");
-                }
-
-                // Increment count if current floor remains on elevator_queue after potentially removing rider above
-                if (elevator_queue.contains(getCurrentFloor())){
-
-                    if (currentCount== capacity){
-                        //TODO: Reject rider
-                        System.out.println("Rejected");
-                    }
-
-                    else {
-                        currentCount++;
-                    }
-
-                    // Remove current floor from elevator queue once rider enters/is rejected
-                    elevator_queue.remove(elevator_queue.indexOf(getCurrentFloor()));
-                }
-
-                setStatusStationary();
-
-                // Wait 15 seconds
-                while (SimulationClock.getTick() < currentTime + 15){ // "Less than" is used instead of "!=" in case clock ticked twice
-                    SimulationClock.tick();//sleep 10 ms maybe
-                }
-                System.out.println("15 seconds has passed by for rider to get in or out");
-
-                // What should happen if no more destinations on the queue? just sleep the thread maybe
-                // (Do we do a signalAll from ElevatorArray? If we do signalAll, each sleeping elevator will ask "Did something get added to my queue" )
-
-            }
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
-//        finally {
-//            elevatorLock.unlock();
-//        }
-
-//        while ( isElevatorRunning() ) {
-//
-//            // remain idle until awoken
-//            while ( !isMoving() ) {
-//                pauseThread(10);
-//            }
-//            // pause while passenger exits (if one exists)
-//            pauseThread( PASSENDER_LEAVING_TIME );
-//
-//            // Elevator needs 5 seconds to travel
-//            pauseThread( TRAVEL_TIME);
-//            // stop Elevator
-//            setMoving( false );
-//        } // end while loop
-
-    } // end method run
-
-    private void updateFloor() {
+    public void updateFloor() {
         if (status == Status.UP){
             currentFloor++;
         }
@@ -231,13 +170,49 @@ public class Elevator {
 
     // Set the status to UP or DOWN
     public void setStatusUpDown(){
-        if (elevator_queue.get(0) > getCurrentFloor()){
-            System.out.println("current floor: " + getCurrentFloor() + " Destination floor: " + elevator_queue.get(0) + " Moving UP");
+        //TODO: this needs to account for 2 cases: going to pick up rider
+        if (elevator_queue.get(0) > currentFloor){
+            System.out.println("elevator current floor: " + currentFloor + " Destination floor: " + elevator_queue.get(0) + " Moving UP");
             status = Status.UP;
         }
         else {
-            System.out.println("elevator current floor: " + getCurrentFloor() + " Destination floor: " + elevator_queue.get(0) + " Moving DOWN");
+            System.out.println("elevator current floor: " + currentFloor + " Destination floor: " + elevator_queue.get(0) + " Moving DOWN");
             status = Status.DOWN;
         }
+    }
+
+    public List<Integer> getElevatorQueue() {
+        return elevator_queue;
+    }
+
+    public void pickUpRider() {
+        if (elevator_queue.contains(currentFloor)){
+
+            if (currentCount== capacity){
+                //TODO: Reject rider
+                System.out.println("Rejected");
+            }
+
+            else {
+                currentCount++;
+            }
+
+            // Remove current floor from elevator queue once rider enters/is rejected
+            elevator_queue.remove(elevator_queue.indexOf(currentFloor));
+        }
+
+    }
+
+    public int getElevatorIndex() {
+        return elevatorIndex;
+    }
+
+    public List<Integer> getDropoffQueue() {
+        return dropOff_queue;
+    }
+
+    public void setStatusDoorsOpen() {
+        status = Status.DOORS_OPEN;
+        System.out.println("Elevator "+ elevatorIndex + ": Doors open");
     }
 }

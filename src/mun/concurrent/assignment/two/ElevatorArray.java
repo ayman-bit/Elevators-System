@@ -10,20 +10,27 @@ public class ElevatorArray implements Runnable {
     List<Elevator> elevators = new ArrayList<>();
     List<Rider> riders = new ArrayList<>();
     int numElevators;
-    ReentrantLock elevatorLock;
+    ReentrantLock elevatorLock; // TODO: should this be static?
     Condition riderAdded;
     boolean mainEnded;
+    ReentrantLock elevatorClockLock;
+    Condition elevatorClockTicked;
+    static Clock SimulationClock;
 
-    public ElevatorArray (int numElevators, int capacity, ReentrantLock elevatorLock, Condition riderAdded, boolean mainEnded){
+    public ElevatorArray (int numElevators, int capacity, ReentrantLock elevatorLock, Condition riderAdded, boolean mainEnded,
+                          ReentrantLock elevatorClockLock, Condition elevatorClockTicked, Clock simulationClock){
 
         this.numElevators= numElevators;
         this.elevatorLock = elevatorLock;
         this.riderAdded = riderAdded;
         this.mainEnded = mainEnded;
+        this.elevatorClockLock = elevatorClockLock;
+        this.elevatorClockTicked = elevatorClockTicked;
+        SimulationClock = simulationClock;
 
         // Create elevators
         for(int i = 0; i < numElevators; i++) {
-            elevators.add( new Elevator(capacity, 0, 1));
+            elevators.add( new Elevator(capacity, 0, 1, i));
         }
 
     }
@@ -106,6 +113,8 @@ public class ElevatorArray implements Runnable {
 
         System.out.println("Starting: " +  Thread.currentThread().getName());
 
+        Elevator elevator = new Elevator();
+        boolean elevatorShouldMove = false;
         while(!mainEnded) {
             try {
                 elevatorLock.lockInterruptibly();
@@ -114,22 +123,100 @@ public class ElevatorArray implements Runnable {
 
                     Rider rider = riders.get(0);
 
-                    Elevator elevator = getElevatorIndex(rider);
+                    elevator = getElevatorIndex(rider);
                     elevator.addRiderToElevQueue(rider);
                     riders.remove(rider);
-                    elevator.move();
+                    elevatorShouldMove = true;
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } finally {
                 elevatorLock.unlock();
             }
+
+            // TODO: make this in a good way. It is this way because dont want to keep locked while elev moves
+            if(elevatorShouldMove){
+                try {
+                    moveElevator(elevator);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
         }
 
         // Can have a list of riders, condition can be while riders == 0 wait
         // Then once there is a rider, signalAll, one thread will go there and remove rider to decrement list
         // Then it will call the scheduleRider method
         // Then it will call the run method in elevator
-
     }
+
+    public void moveElevator(Elevator elevator) throws InterruptedException {
+        System.out.println("The elevator will pick up from floor: " + elevator.getElevatorQueue().get(0) + " And drop off at floor: " + elevator.getDropoffQueue().get(0));
+
+        // while there exists destinations on the queue
+        while(elevator.getElevatorQueue().size() > 0 || elevator.getDropoffQueue().size() > 0 ){
+            System.out.println("current thread: " + Thread.currentThread().getName());
+
+            // Set status based on direction
+            elevator.setStatusUpDown();
+
+            // read current tick
+            int currentTime = getCurrentTime();
+
+            // TODO: should unlock CLOCK here maybe?
+
+
+            // Go to that floor.
+            while(elevator.getCurrentFloor() != elevator.getElevatorQueue().get(0)){
+
+                // Lock and check if 5 seconds have passed, if so update floor.
+                elevatorClockLock.lockInterruptibly();
+                int newCurrentTime = SimulationClock.getTick();
+                System.out.println("Elevator " + elevator.getElevatorIndex() + " moving. Current time: " + newCurrentTime + " current floor: " + elevator.getCurrentFloor() + " Destination floor: " + elevator.getElevatorQueue().get(0));
+
+                if (newCurrentTime == currentTime + 5){ // ideally should be ==
+                    elevator.updateFloor();
+                    currentTime = newCurrentTime;
+                }
+
+                elevatorClockLock.unlock();
+                Thread.sleep(10);
+            }
+
+            // Cases: 1 drop off only, 2 drop off only, 1 drop off and 1 entering, 2 drop off and 1 entering, 1 entering only
+
+            // Drop off rider (or 2 riders) if current floor contained in dropOff_queue
+            elevator.dropOffRider();
+
+            // Increment count if current floor remains on elevator_queue after potentially removing rider above
+            elevator.pickUpRider();
+
+            // Set status to stationary temporarily while elevator waits 15 seconds
+            //TODO: what to do with elevator.setStatusStationary();?
+            elevator.setStatusDoorsOpen();
+
+            // Wait 15 seconds
+            while (SimulationClock.getTick() < currentTime + 15){ // "Less than" is used instead of "!=" in case clock ticked twice
+//              SimulationClock.tick(); //TODO: shouldnt tick here, should come from main thread //sleep 10 ms maybe
+                Thread.sleep(10);
+            }
+            System.out.println("Elevator " + elevator.getElevatorIndex() +": 15 seconds has passed by for rider to get in or out");
+
+            // What should happen if no more destinations on the queue? just sleep the thread maybe
+            // (Do we do a signalAll from ElevatorArray? If we do signalAll, each sleeping elevator will ask "Did something get added to my queue" )
+
+        }
+
+    } // end method run
+
+    private int getCurrentTime() throws InterruptedException {
+        elevatorClockLock.lockInterruptibly();
+        int currentTime = SimulationClock.getTick();
+        elevatorClockTicked.signalAll();
+        elevatorClockLock.unlock();
+        return currentTime;
+    }
+
+
 }
