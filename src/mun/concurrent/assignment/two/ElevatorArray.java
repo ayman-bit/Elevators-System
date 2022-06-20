@@ -10,12 +10,16 @@ public class ElevatorArray implements Runnable {
     List<Elevator> elevators = new ArrayList<>();
     List<Rider> riders = new ArrayList<>();
     int numElevators;
-    ReentrantLock elevatorLock = new ReentrantLock();
-    Condition riderAdded = elevatorLock.newCondition();
+    ReentrantLock elevatorLock;
+    Condition riderAdded;
+    boolean mainEnded;
 
-    public ElevatorArray (int numElevators, int capacity){
+    public ElevatorArray (int numElevators, int capacity, ReentrantLock elevatorLock, Condition riderAdded, boolean mainEnded){
 
         this.numElevators= numElevators;
+        this.elevatorLock = elevatorLock;
+        this.riderAdded = riderAdded;
+        this.mainEnded = mainEnded;
 
         // Create elevators
         for(int i = 0; i < numElevators; i++) {
@@ -100,30 +104,27 @@ public class ElevatorArray implements Runnable {
 
         // but problem here is how to know which elevator has the rider added
 
-        // Alternatively can have assigning of elevators here,
-        try {
-            elevatorLock.lockInterruptibly();
-            if (riders.size()!=0) {
-//                riderAdded.await();
+        System.out.println("Starting: " +  Thread.currentThread().getName());
 
+        while(!mainEnded) {
+            try {
+                elevatorLock.lockInterruptibly();
+                riderAdded.await(); // should this be a semaphore?
+                if (riders.size() != 0) {
 
-                System.out.println("Current Thread: " + Thread.currentThread().getName());
-                Rider rider = riders.get(0);
+                    Rider rider = riders.get(0);
 
-                Elevator elevator = getElevatorIndex(rider);
-                elevator.addRiderToElevQueue(rider);
-                riders.remove(rider);
-                elevator.move();
+                    Elevator elevator = getElevatorIndex(rider);
+                    elevator.addRiderToElevQueue(rider);
+                    riders.remove(rider);
+                    elevator.move();
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                elevatorLock.unlock();
             }
         }
-        catch (InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-        finally {
-            elevatorLock.unlock();
-        }
-
 
         // Can have a list of riders, condition can be while riders == 0 wait
         // Then once there is a rider, signalAll, one thread will go there and remove rider to decrement list

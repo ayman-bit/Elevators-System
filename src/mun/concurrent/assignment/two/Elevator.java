@@ -139,7 +139,7 @@ public class Elevator {
                 while(getCurrentFloor() != elevator_queue.get(0)){
                     // lock clock
                     System.out.println();
-                    SimulationClock.tick();
+                    SimulationClock.tick();//TODO: shouldnt tick here, should come from main thread
                     System.out.println("Elevator moving current time: " + SimulationClock.getTick() + " current floor: " + getCurrentFloor() + " Destination floor: " + elevator_queue.get(0));
                     if (SimulationClock.getTick() == currentTime + 5){
                         updateFloor();
