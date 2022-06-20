@@ -53,7 +53,7 @@ class ElevatorSimulator implements Runnable {
 
 		//create threads
 		for (int i = 0; i<numElevators; i++){
-			Thread thread = new Thread(new ElevatorArray());
+			Thread thread = new Thread(elevators);
 			thread.start();
 			System.out.println("Starting: " +  Thread.currentThread().getName());
 		}
@@ -88,6 +88,7 @@ class ElevatorSimulator implements Runnable {
 						int nextRiderTime = SimulationClock.getTick() + ThreadLocalRandom.current().nextInt(20, 120 + 1);
 						Rider rider = elevatorRiderFactory.generateRiderFloor(i+1);
 						elevators.addRiderToRiders(rider);
+						elevators.run();
 						nextRidersTimes.set(i, nextRiderTime);
 					}
 

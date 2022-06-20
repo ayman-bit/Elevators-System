@@ -103,17 +103,21 @@ public class ElevatorArray implements Runnable {
         // Alternatively can have assigning of elevators here,
         try {
             elevatorLock.lockInterruptibly();
-            while (riders.size()==0){
-                riderAdded.await();
-            }
+            if (riders.size()!=0) {
+//                riderAdded.await();
 
-            System.out.println("Current Thread: " + Thread.currentThread().getName());
-            Rider rider = riders.get(0);
-            riders.remove(rider);
-            Elevator elevator = getElevatorIndex(rider);
-            elevator.addRiderToElevQueue(rider);
-            elevator.move();
-        } catch (InterruptedException e) {
+
+                System.out.println("Current Thread: " + Thread.currentThread().getName());
+                Rider rider = riders.get(0);
+
+                Elevator elevator = getElevatorIndex(rider);
+                elevator.addRiderToElevQueue(rider);
+                riders.remove(rider);
+                elevator.move();
+            }
+        }
+        catch (InterruptedException e)
+        {
             e.printStackTrace();
         }
         finally {

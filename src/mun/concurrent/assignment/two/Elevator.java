@@ -52,7 +52,6 @@ public class Elevator {
         elevator_queue.add(rider.dest_floor);
         // TODO: sort the queue. ISSUE: when elevator going down, should be sorted in reverse order. maybe no need to sort.
         dropOff_queue.add(rider.dest_floor);
-//        riderAdded.signalAll();
     }
 
     public void removeRider(int currentFloor){
@@ -118,7 +117,7 @@ public class Elevator {
     // Simulate elevator moving
     public void move(){
         System.out.println("current elevator: " +  Thread.currentThread().getName());
-        System.out.println("WEEE GOTT SOMEONE INSIDE THE ELEVATOR: " + elevator_queue.size());
+        System.out.println("We got someone Inside the elevator from floor: " + elevator_queue.get(0) + " Heading to floor: " + elevator_queue.get(1));
 
 //        elevatorLock.lock();
 //        try {
@@ -128,7 +127,7 @@ public class Elevator {
 
             // while there exists destinations on the queue
             while(elevator_queue.size() > 0 ){
-                System.out.println("current thread" + Thread.currentThread().getName() + elevator_queue.size());
+                System.out.println("current thread: " + Thread.currentThread().getName());
                 // Set status based on direction
                 setStatusUpDown();
 
@@ -139,6 +138,9 @@ public class Elevator {
                 // Go to that floor.
                 while(getCurrentFloor() != elevator_queue.get(0)){
                     // lock clock
+                    System.out.println();
+                    SimulationClock.tick();
+                    System.out.println("Elevator moving current time: " + SimulationClock.getTick() + " current floor: " + getCurrentFloor() + " Destination floor: " + elevator_queue.get(0));
                     if (SimulationClock.getTick() == currentTime + 5){
                         updateFloor();
                         currentTime = SimulationClock.getTick();
@@ -174,8 +176,9 @@ public class Elevator {
 
                 // Wait 15 seconds
                 while (SimulationClock.getTick() < currentTime + 15){ // "Less than" is used instead of "!=" in case clock ticked twice
-                    //sleep 10 ms maybe
+                    SimulationClock.tick();//sleep 10 ms maybe
                 }
+                System.out.println("15 seconds has passed by for rider to get in or out");
 
                 // What should happen if no more destinations on the queue? just sleep the thread maybe
                 // (Do we do a signalAll from ElevatorArray? If we do signalAll, each sleeping elevator will ask "Did something get added to my queue" )
@@ -229,10 +232,12 @@ public class Elevator {
     // Set the status to UP or DOWN
     public void setStatusUpDown(){
         if (elevator_queue.get(0) > getCurrentFloor()){
-            status = Status.DOWN;
+            System.out.println("current floor: " + getCurrentFloor() + " Destination floor: " + elevator_queue.get(0) + " Moving UP");
+            status = Status.UP;
         }
         else {
-            status = Status.UP;
+            System.out.println("elevator current floor: " + getCurrentFloor() + " Destination floor: " + elevator_queue.get(0) + " Moving DOWN");
+            status = Status.DOWN;
         }
     }
 }
