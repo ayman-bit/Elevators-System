@@ -30,6 +30,7 @@ public class Elevator {
         this.currentCount = currentCount;
         this.currentFloor = currentFloor;
         elevatorIndex = index;
+        status = Status.STATIONARY;
     }
 
     public Elevator(){
@@ -44,36 +45,17 @@ public class Elevator {
         return currentFloor;
     }
 
-    public int getDestinationFloor() {
-        return elevator_queue.get(0);
-    }
-
     public void addRiderToElevQueue(Rider rider){
-        // add rider.start to queue
         elevator_queue.add(rider.start_floor);
-
-//        elevator_queue.add(rider.dest_floor);
+        elevator_queue.add(rider.dest_floor);
         dropOff_queue.add(rider.dest_floor);
-//        pickup_queue.add(rider.start_floor);
 
 
-        // elevator_queue = [5, 1, 4,2]
+//        sortQueue(elevator_queue);
+        System.out.println("elevator_queue: " + elevator_queue);
+        sortQueue(dropOff_queue);
+        System.out.println("dropOff_queue: " + dropOff_queue);
 
-        // pickup_queue = [5,4] DOWN
-
-        // dropoff_queue = [1,2] DOWN
-        // dropoff_queue = [2,1] DOWN
-
-
-
-
-
-        // elevator at level one UP
-
-
-
-        sortQueue(elevator_queue);
-        // TODO: should we sort the dropoff queue?
     }
 
     private void sortQueue(List<Integer> queue) {
@@ -87,65 +69,71 @@ public class Elevator {
 
     public void dropOffRider(){
         // elevator_queue.get(0) is current floor since array always gets sorted
-        // what if 2 people want to get off here?
         Integer currentFloorI = (Integer) currentFloor;
         int occurences = Collections.frequency(dropOff_queue, currentFloorI);
 
         if (occurences == 2){
             System.out.println("Elevator " + getElevatorIndex() + " Dropping off riders");
             currentCount -= 2;
-            dropOff_queue.remove(dropOff_queue.indexOf(currentFloor));
-            dropOff_queue.remove(dropOff_queue.indexOf(currentFloor));
-//            elevator_queue.remove(elevator_queue.indexOf(currentFloor));
-//            elevator_queue.remove(elevator_queue.indexOf(currentFloor));
+            int toRemove = dropOff_queue.indexOf(currentFloor);
+            if (toRemove != -1){
+                dropOff_queue.remove(toRemove);
+                dropOff_queue.remove(toRemove);
+            }
+
+            toRemove = elevator_queue.indexOf(currentFloor);
+            if (toRemove != -1){
+                elevator_queue.remove(toRemove); //TODO: should fix this
+                elevator_queue.remove(toRemove); //TODO: should fix this
+
+            }
         }
         else if (occurences == 1) {
             System.out.println("Elevator " + getElevatorIndex() + " Dropping off riders");
             currentCount--;
-            dropOff_queue.remove(dropOff_queue.indexOf(currentFloor));
-            elevator_queue.remove(elevator_queue.indexOf(currentFloor));
+
+            int toRemove = dropOff_queue.indexOf(currentFloor);
+            if (toRemove != -1){
+                dropOff_queue.remove(toRemove);
+            }
+
+            toRemove = elevator_queue.indexOf(currentFloor);
+            if (toRemove != -1){
+                elevator_queue.remove(toRemove); //TODO: should fix this
+            }
+
         }
 
 
-        // TODO: sort the queue
     }
 
-    // is Elevator thread running?
-    private boolean isElevatorRunning()
-    {
-        return elevatorRunning;
-    }
-    // start Elevator thread
-//    public void start() {
-//        if ( thread == null ) {
-//            thread = new Thread(this);
-//        }
-//        elevatorRunning = true;
-//        thread.start();
-//    }
+    // return false if reject
+    public boolean pickUpRider() {
+        boolean b = true;
+        // Pickup if current floor is not in drop off queue
+        // Dropoffs happen BEFORE pickups, so this check should be good
+        if (elevator_queue.contains(currentFloor) && !dropOff_queue.contains(currentFloor)){
 
-    // stop Elevator thread; method run terminates
-    public void stopElevator() {
-        elevatorRunning = false;
-    }
+            if (currentCount== capacity){
+                //TODO: Reject rider, and remove their floors from the queues
+                elevator_queue.remove(elevator_queue.indexOf(currentFloor));
+                //TODO: how to remove the rider's destination
+                System.out.println("Rejected");
+                b =false;
+            }
 
-    // is Elevator moving?
-    public boolean isMoving()
-    {
-        return moving;
-    }
+            else {
+                currentCount++;
+            }
 
-    // set if Elevator should move
-    private void setMoving( boolean elevatorMoving )
-    {
-        moving = elevatorMoving;
-    }
+            // Remove current floor from elevator queue once rider enters/is rejected
+            System.out.println("ElevQ: " + elevator_queue);
+            elevator_queue.remove(0);
+            System.out.println("elevator_queue after pickup: " + elevator_queue + ". Size: " + elevator_queue.size());
+        }
 
-    // pause concurrent thread for number of milliseconds
-    private void pauseThread( int time )
-    {
-        for (int i=SimulationClock.getTick(); i < (i+time);i++ ){}
-    } // end method pauseThread
+        return b;
+    }
 
     public void updateFloor() {
         if (status == Status.UP){
@@ -175,31 +163,21 @@ public class Elevator {
             System.out.println("elevator current floor: " + currentFloor + " Destination floor: " + elevator_queue.get(0) + " Moving UP");
             status = Status.UP;
         }
-        else {
+        else if(elevator_queue.get(0) < currentFloor) {
             System.out.println("elevator current floor: " + currentFloor + " Destination floor: " + elevator_queue.get(0) + " Moving DOWN");
             status = Status.DOWN;
         }
     }
 
-    public List<Integer> getElevatorQueue() {
-        return elevator_queue;
-    }
-
-    public void pickUpRider() {
-        if (elevator_queue.contains(currentFloor)){
-
-            if (currentCount== capacity){
-                //TODO: Reject rider
-                System.out.println("Rejected");
-            }
-
-            else {
-                currentCount++;
-            }
-
-            // Remove current floor from elevator queue once rider enters/is rejected
-            elevator_queue.remove(elevator_queue.indexOf(currentFloor));
+    public List<Integer> getElevatorQueue() throws InterruptedException {
+        List<Integer> list;
+        elevatorLock.lockInterruptibly();
+        try {
+            list = elevator_queue;
+        } finally {
+            elevatorLock.unlock();
         }
+        return  list;
 
     }
 

@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.*;
 
+// average amount of time taken to serve each elevator rider's request
+
 class ElevatorSimulator implements Runnable {
 
 	static Clock SimulationClock = new Clock();
@@ -15,10 +17,11 @@ class ElevatorSimulator implements Runnable {
 	private int elevatorCapacity;
 	
 	private int simulationTime;
-	
-	private ElevatorStats elevatorStats;
-	private Elevator elevator;
-	private Rider rider;
+
+	private int totalRequests = 5;
+	public static int ridersTime = 0;
+	public int rejects = 0;
+
 	
 	private ElevatorRiderFactory elevatorRiderFactory;
 	ArrayList<Integer> nextRidersTimes;
@@ -42,8 +45,7 @@ class ElevatorSimulator implements Runnable {
 		this.elevatorCapacity = elevatorCapacity;
 		this.simulationTime = simulationTime;
 		elevators = new ElevatorArray(numElevators, elevatorCapacity, elevatorLock, riderAdded, mainEnded,
-				elevatorClockLock, elevatorClockTicked, SimulationClock);
-//		elevators = new ElevatorArray();
+				elevatorClockLock, elevatorClockTicked, SimulationClock, this);
 
 		elevatorRiderFactory = new ElevatorRiderFactory();
 		List<Thread> myThread = new ArrayList<Thread>(numElevators);
@@ -52,12 +54,6 @@ class ElevatorSimulator implements Runnable {
 		for (int i = 0; i < 5; i++){
 			nextRidersTimes.add(ThreadLocalRandom.current().nextInt(20, 120 + 1));
 		}
-//		nextRidersTimes.add(96);
-//		nextRidersTimes.add(55);
-//		nextRidersTimes.add(82);
-//		nextRidersTimes.add(106);
-//		nextRidersTimes.add(23);
-
 
 		//create threads
 		for (int i = 0; i<numElevators; i++){
@@ -76,9 +72,6 @@ class ElevatorSimulator implements Runnable {
 	@Override
 	public void run() {		
 
-		//<INITIALIZATION HERE>
-//		SimulationClock = new Clock(); //TODO: this initialization was moved earlier to pass clock to Array
-		// Simulate Small Elevators
 		while (SimulationClock.getTick() < simulationTime)
 		{
 			try
@@ -92,22 +85,19 @@ class ElevatorSimulator implements Runnable {
 				for (int i=0; i<5; i++){
 					int currentNextRiderTime = nextRidersTimes.get(i);
 
-					//TODO: should we unlock at end of every iteration
 					if (currentNextRiderTime == SimulationClock.getTick()) {
 						int nextRiderTime = SimulationClock.getTick() + ThreadLocalRandom.current().nextInt(20, 120 + 1);
 						Rider rider = elevatorRiderFactory.generateRiderFloor(i+1);
 						elevators.addRiderToRiders(rider);
-//						nextRidersTimes.set(i, nextRiderTime);
-						nextRidersTimes.set(i, 52);
+						nextRidersTimes.set(i, nextRiderTime);
 						Thread.sleep(10);
+						totalRequests++; // TODO: this is a simplification, should be when time for request comes
 					}
 
 					System.out.println("Floor: "+ (i+1) + ". Next rider: " + nextRidersTimes.get(i));
 				}
 
-
-
-				System.out.println("current tick" + SimulationClock.getTick());
+				System.out.println("current tick: " + SimulationClock.getTick());
 				System.out.println("current Thread:" + Thread.currentThread().getName());
 				System.out.println("\n");
 
@@ -124,8 +114,10 @@ class ElevatorSimulator implements Runnable {
 
 		mainEnded = true;
 		// Output elevator stats
-
-		//<PRINT OUT STATS GATHERED DURING SIMULATION>
+		System.out.println("Total Requests: " + totalRequests);
+		System.out.println("Total Rejects: " + rejects);
+		System.out.println("Total Served: " + (totalRequests - rejects));
+		System.out.println("Average Time Per Request: " + (ridersTime/totalRequests));
 
 		SimulationClock.reset();			
 	}
