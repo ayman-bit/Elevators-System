@@ -1,27 +1,18 @@
 package mun.concurrent.assignment.two;
 
 import java.util.*;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static mun.concurrent.assignment.two.ElevatorSimulator.SimulationClock;
 
 
 public class Elevator {
     private int capacity; // max capacity of elevator
     private int currentCount; // how many members in the elevator
     private int currentFloor;
-    private Thread thread; // Elevator's thread to handle asynchronous movement
     private List<Integer> elevator_queue = new ArrayList<Integer>();
     private List<Integer> dropOff_queue = new ArrayList<Integer>();
     private Status status;
-    private boolean elevatorRunning = false;
-    private boolean moving = false;
-    private static final int PASSENDER_LEAVING_TIME = 15;
-    private static final int TRAVEL_TIME = 5;
-    private static ReentrantLock elevatorClockLock;
-    private static Condition elevatorClockTicked;
-    ReentrantLock elevatorLock = new ReentrantLock(); // TODO Why this being used??
+    ReentrantLock elevatorLock = new ReentrantLock();
     private int elevatorIndex;
 
     public Elevator(int capacity, int currentCount, int currentFloor, int index){
@@ -158,7 +149,6 @@ public class Elevator {
 
     // Set the status to UP or DOWN
     public void setStatusUpDown(){
-        //TODO: this needs to account for 2 cases: going to pick up rider
         if (elevator_queue.get(0) > currentFloor){
             System.out.println("elevator current floor: " + currentFloor + " Destination floor: " + elevator_queue.get(0) + " Moving UP");
             status = Status.UP;

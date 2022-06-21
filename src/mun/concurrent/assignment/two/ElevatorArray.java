@@ -10,7 +10,7 @@ public class ElevatorArray implements Runnable {
     List<Elevator> elevators = new ArrayList<>();
     List<Rider> riders = new ArrayList<>();
     int numElevators;
-    ReentrantLock elevatorLock; // TODO: should this be static?
+    ReentrantLock elevatorLock;
     Condition riderAdded;
     boolean mainEnded;
     ReentrantLock elevatorClockLock;
@@ -37,16 +37,11 @@ public class ElevatorArray implements Runnable {
 
     }
 
-    public ElevatorArray(){
-
-    }
 
     public void addRiderToRiders(Rider rider) {
         elevatorLock.lock();
-
         riders.add(rider);
         riderAdded.signalAll();
-
         elevatorLock.unlock();
     }
 
@@ -101,9 +96,6 @@ public class ElevatorArray implements Runnable {
 
 
     public void run(){
-        // move the elevator there
-
-        // but problem here is how to know which elevator has the rider added
 
         System.out.println("Starting: " +  Thread.currentThread().getName());
 
@@ -134,7 +126,6 @@ public class ElevatorArray implements Runnable {
                 elevatorLock.unlock();
             }
 
-            // TODO: make this in a good way. It is this way because dont want to keep locked while elev moves
             if(elevatorShouldMove){
                 try {
                     moveElevator(elevator, elevatorShouldMove);

@@ -9,8 +9,6 @@ public class ElevatorRiderFactory {
 
     }
 
-    //int nextRiderTime = ThreadLocalRandom.current().nextInt(20, 120 + 1);
-
     public Rider generateRiderFloor(int start_floor) {
         int end_floor= generateFloor();
 
@@ -27,11 +25,4 @@ public class ElevatorRiderFactory {
         return ThreadLocalRandom.current().nextInt(1, 5 + 1);
     }
 
-    // check if next rider time is now, if it is generate new random time for next rider
-    public int setNextRiderRider(int start_floor, int nextRiderTime){
-        if (nextRiderTime == SimulationClock.getTick()) {
-            nextRiderTime = SimulationClock.getTick() + ThreadLocalRandom.current().nextInt(20, 120 + 1);
-        }
-        return nextRiderTime;
-    }
 }

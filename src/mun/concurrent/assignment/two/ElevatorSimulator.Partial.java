@@ -48,7 +48,6 @@ class ElevatorSimulator implements Runnable {
 				elevatorClockLock, elevatorClockTicked, SimulationClock, this);
 
 		elevatorRiderFactory = new ElevatorRiderFactory();
-		List<Thread> myThread = new ArrayList<Thread>(numElevators);
 
 		nextRidersTimes = new ArrayList<Integer>();
 		for (int i = 0; i < 5; i++){
@@ -61,13 +60,10 @@ class ElevatorSimulator implements Runnable {
 			Thread thread = new Thread(runnable);
 			thread.start();
 		}
-		//each thread runs .run
+
 
 	}
 
-	public ElevatorSimulator() {
-
-	}
 
 	@Override
 	public void run() {		
