@@ -5,5 +5,6 @@ public enum Status {
         DOWN,
         STATIONARY,
         STATIONARY_UP,
-        STATIONARY_DOWN
+        STATIONARY_DOWN,
+        DOORS_OPEN
 }
